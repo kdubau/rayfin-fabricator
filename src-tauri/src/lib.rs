@@ -8,7 +8,6 @@ mod commands;
 mod error;
 mod services;
 mod state;
-#[cfg(target_os = "macos")]
 mod titlebar;
 mod types;
 #[cfg(test)]
@@ -243,8 +242,9 @@ pub fn run() {
       commands::misc::open_logs,
       commands::misc::open_in_editor,
       commands::misc::window_reveal,
-      commands::misc::window_center_traffic_lights,
-      commands::misc::window_reveal_traffic_lights,
+      commands::titlebar::window_center_traffic_lights,
+      commands::titlebar::window_reveal_traffic_lights,
+      commands::titlebar::window_place_snap_overlay,
       commands::misc::relaunch,
       // diagnostics
       commands::diagnostics::diagnostics_export,

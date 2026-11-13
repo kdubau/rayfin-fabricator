@@ -798,24 +798,28 @@ describe('Workbench authentication recovery', () => {
 })
 
 describe('Workbench app bar', () => {
-  it.each([true, false])('uses macOS drag regions only on macOS: %s', async (mac) => {
-    const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(mac)
-    try {
-      installApi(true)
-      const { container } = render(<Workbench {...makeProps()} />, { wrapper: Wrapper })
-      await screen.findByLabelText('Chat draft')
+  it.each(['mac', 'windows', null] as const)(
+    'drags the window by the bar with a custom title bar: %s',
+    async (kind) => {
+      const titlebar = vi.spyOn(platform, 'customTitlebar').mockReturnValue(kind)
+      const drag = kind !== null
+      try {
+        installApi(true)
+        const { container } = render(<Workbench {...makeProps()} />, { wrapper: Wrapper })
+        await screen.findByLabelText('Chat draft')
 
-      const bar = container.querySelector('header.app-bar') as HTMLElement
-      expect(bar.hasAttribute('data-tauri-drag-region')).toBe(mac)
-      expect(bar.querySelector('.app-bar-row')?.hasAttribute('data-tauri-drag-region')).toBe(mac)
-      const search = within(bar).getByRole('button', { name: 'Search' })
-      expect(search.hasAttribute('data-tauri-drag-region')).toBe(false)
-      fireEvent.click(search)
-      expect(searchProps).toHaveBeenCalled()
-    } finally {
-      isMac.mockRestore()
+        const bar = container.querySelector('header.app-bar') as HTMLElement
+        expect(bar.hasAttribute('data-tauri-drag-region')).toBe(drag)
+        expect(bar.querySelector('.app-bar-row')?.hasAttribute('data-tauri-drag-region')).toBe(drag)
+        const search = within(bar).getByRole('button', { name: 'Search' })
+        expect(search.hasAttribute('data-tauri-drag-region')).toBe(false)
+        fireEvent.click(search)
+        expect(searchProps).toHaveBeenCalled()
+      } finally {
+        titlebar.mockRestore()
+      }
     }
-  })
+  )
 
   it('shows a neutral account control while the launch check runs', () => {
     installApi()

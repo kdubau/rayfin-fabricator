@@ -1,0 +1,107 @@
+/* The main window's own title bar (see index.tsx). Whichever bar is on top
+   takes the first --titlebar-h row (main.css) and keeps the window controls'
+   space clear: --titlebar-inset-start for the macOS traffic lights, until
+   fullscreen hides them, and --titlebar-inset-end for the Windows caption
+   buttons. */
+
+:root[data-mac-titlebar='window'] {
+  --titlebar-inset-start: calc(88px / var(--ui-scale, 1));
+}
+
+:root[data-titlebar='windows'] {
+  /* Three 46px caption buttons, as Windows draws them. */
+  --caption-w: 46px;
+  --caption-buttons-w: calc(3 * var(--caption-w));
+  --titlebar-inset-end: calc(var(--caption-buttons-w) + 12px);
+}
+
+:root[data-titlebar] .app-bar-start {
+  padding-left: max(0px, var(--titlebar-inset-start, 0px) - 12px);
+}
+
+:root[data-titlebar] .app-bar-end {
+  padding-right: max(0px, var(--titlebar-inset-end, 0px) - 12px);
+}
+
+:root[data-mac-titlebar-slide] :is(.app-bar-start, .help-bar) {
+  transition: padding-left 650ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-mac-titlebar-slide] :is(.app-bar-start, .help-bar) {
+    transition: none;
+  }
+}
+
+/* Moves the window on screens without an app bar: beside the traffic lights at
+   the height of the native title bar on macOS, and the whole first row up to
+   the caption buttons on Windows. */
+:root[data-titlebar='mac'] {
+  --titlebar-drag-start: calc(88px / var(--ui-scale, 1));
+  --titlebar-drag-h: calc(28px / var(--ui-scale, 1));
+}
+
+.titlebar-startup-drag {
+  position: fixed;
+  top: 0;
+  left: var(--titlebar-drag-start, 0px);
+  right: var(--caption-buttons-w, 0px);
+  height: var(--titlebar-drag-h, var(--titlebar-h));
+  z-index: 45;
+}
+
+.titlebar-startup-drag--blocking {
+  z-index: 2001;
+}
+
+/* Windows caption buttons (WindowControls.tsx), drawn as Windows 11 draws its
+   own: above every screen, full row height, dimmed while the window is
+   inactive. `.is-hover` and `.is-pressed` come from the native Snap Layouts
+   overlay over Maximize, which takes the pointer from the page. */
+.caption-buttons {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 9500;
+  display: flex;
+  height: var(--titlebar-h);
+}
+
+.caption-button {
+  display: grid;
+  place-items: center;
+  width: var(--caption-w);
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', sans-serif;
+  font-size: 10px;
+  line-height: 1;
+  cursor: default;
+}
+
+.caption-buttons--inactive .caption-button {
+  color: var(--text-faint);
+}
+
+.caption-button:is(:hover, .is-hover) {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--text);
+}
+
+.caption-button:is(:active, .is-pressed) {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.caption-button--close:is(:hover, .is-hover) {
+  background: #c42b1c;
+  color: #fff;
+}
+
+.caption-button--close:is(:active, .is-pressed) {
+  background: rgb(196 43 28 / 90%);
+  color: #fff;
+}

@@ -47,8 +47,9 @@ there is no title bar, the inset is 0, and the patch changes nothing. The main w
 uses an overlay titlebar on macOS, where applying this inset would move the preview and
 Quick Look child webviews too low.
 
-Traffic-light layout is app-owned in `src-tauri/src/titlebar.rs`: the renderer
-(`src/renderer/src/macTitlebar.ts`, on every screen) supplies the center of the first
+Traffic-light layout is app-owned in `src-tauri/src/titlebar/macos.rs` (see
+[Window title bar](../CONTRIBUTING.md#window-title-bar)): the renderer
+(`src/renderer/src/titlebar/mac.ts`, on every screen) supplies the center of the first
 `--titlebar-h` row when zoom changes, and synchronous AppKit notifications
 keep the controls in place during resize and project-title changes without a renderer
 round trip. A native title observer reapplies alignment after AppKit finishes updating

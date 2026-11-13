@@ -216,42 +216,10 @@ code {
   border-bottom: 1px solid var(--border);
 }
 
-/* The first bar row on every screen. On macOS the native window controls centre
-   on it (macTitlebar.ts), and whichever bar is on top keeps --mac-inset clear
-   for them until fullscreen hides them. */
+/* The first bar row on every screen, which doubles as the window's title bar
+   where the native one is gone (see titlebar/). */
 :root {
   --titlebar-h: 42px;
-}
-
-:root[data-mac-titlebar='window'] {
-  --mac-inset: calc(88px / var(--ui-scale, 1));
-}
-
-:root[data-mac-titlebar] .app-bar-start {
-  padding-left: max(0px, var(--mac-inset, 0px) - 12px);
-}
-
-:root[data-mac-titlebar-slide] :is(.app-bar-start, .help-bar) {
-  transition: padding-left 650ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root[data-mac-titlebar-slide] :is(.app-bar-start, .help-bar) {
-    transition: none;
-  }
-}
-
-.mac-startup-drag {
-  position: fixed;
-  top: 0;
-  left: calc(88px / var(--ui-scale, 1));
-  right: 0;
-  height: calc(28px / var(--ui-scale, 1));
-  z-index: 45;
-}
-
-.mac-startup-drag--blocking {
-  z-index: 2001;
 }
 
 .app-bar-row {

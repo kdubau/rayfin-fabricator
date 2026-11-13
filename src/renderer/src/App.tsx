@@ -14,8 +14,7 @@ import { useUpdates } from './update'
 import { useToast } from './toast'
 import { authErrorMessage } from './authErrors'
 import { reportEvent } from './errorReport'
-import { isMac } from './platform'
-import { useMacTitlebar } from './macTitlebar'
+import { StartupDragRegion, useTitlebar, WindowControls } from './titlebar'
 import {
   CHECKING_AUTH,
   failedAuth,
@@ -28,16 +27,6 @@ import {
 } from './startup'
 
 type Phase = 'loading' | 'setup' | 'ready'
-
-function MacStartupDragRegion({ blocking = false }: { blocking?: boolean }): JSX.Element | null {
-  return isMac() ? (
-    <div
-      className={`mac-startup-drag${blocking ? ' mac-startup-drag--blocking' : ''}`}
-      data-tauri-drag-region
-      aria-hidden="true"
-    />
-  ) : null
-}
 
 // Keep the playful splash on screen long enough to actually be seen on a first
 // launch, even when the startup checks resolve almost instantly.
@@ -339,7 +328,7 @@ function App(): JSX.Element {
     applyUiScale(settings.uiScale)
     return watchTheme(settings.theme)
   }, [settings])
-  useMacTitlebar(settings?.uiScale)
+  useTitlebar(settings?.uiScale)
 
   const updateSettings = useCallback(async (patch: Partial<AppSettings>): Promise<void> => {
     setSettings(await window.api.settings.set(patch))
@@ -389,8 +378,9 @@ function App(): JSX.Element {
   if (blocking) {
     return (
       <>
-        <MacStartupDragRegion blocking />
+        <StartupDragRegion blocking />
         <ForcedUpdateScreen />
+        <WindowControls uiScale={settings?.uiScale} />
       </>
     )
   }
@@ -422,7 +412,7 @@ function App(): JSX.Element {
   return (
     <MascotProvider>
       <HelpConversationProvider>
-        {(phase !== 'ready' || curtain !== 'gone') && <MacStartupDragRegion />}
+        {(phase !== 'ready' || curtain !== 'gone') && <StartupDragRegion />}
         <UpdateBanner />
         <UpdateModal />
         {screen}
@@ -436,6 +426,7 @@ function App(): JSX.Element {
             />
           </LaunchCurtain>
         )}
+        <WindowControls uiScale={settings?.uiScale} />
       </HelpConversationProvider>
     </MascotProvider>
   )

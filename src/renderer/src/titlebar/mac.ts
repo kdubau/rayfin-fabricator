@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import type { WindowTitlebarState } from '@shared/ipc'
-import { isMac } from './platform'
+import { isMac } from '../platform'
 
-/** Slides that clear the space under the native controls (see main.css). */
+/** Slides that clear the space under the native controls (see titlebar.css). */
 function slides(): Animation[] {
   return document
     .getAnimations()

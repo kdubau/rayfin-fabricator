@@ -4,7 +4,7 @@ import { Codicon } from '../icons'
 import { topLayerOpen, useSuppressPreview } from '../../overlay'
 import { useToast } from '../../toast'
 import { openDocs } from '../../docsLinks'
-import { isMac } from '../../platform'
+import { dragRegion } from '../../titlebar'
 import { reportThrown } from '../../errorReport'
 import { HelpComposer } from './HelpComposer'
 import { HelpRayAvatar, TypedLine } from './HelpRay'
@@ -76,8 +76,8 @@ export function HelpView({
   continuing
 }: HelpViewProps): JSX.Element {
   const toast = useToast()
-  /** On macOS Help's bar stands in for the app bar, including as the window's handle. */
-  const drag = isMac() ? '' : undefined
+  /** With a custom title bar, Help's bar stands in for the app bar, including as the window's handle. */
+  const drag = dragRegion()
   useSuppressPreview()
   const [conversation, { exchanges, busy, historyReady, resumedAt, grounding, preparing }] =
     useHelpConversation()

@@ -16,6 +16,9 @@ vi.mock('./theme', () => ({
 vi.mock('./components/UpdateBanner', () => ({ default: () => null }))
 vi.mock('./components/UpdateModal', () => ({ default: () => null }))
 vi.mock('./components/ForcedUpdateScreen', () => ({ default: () => null }))
+vi.mock('./titlebar/WindowControls', () => ({
+  WindowControls: () => <div data-testid="window-controls" />
+}))
 vi.mock('./components/SplashScreen', () => ({
   default: ({
     stage,
@@ -214,21 +217,28 @@ afterEach(() => {
 })
 
 describe('App startup', () => {
-  it.each([true, false])('provides a startup drag region only on macOS: %s', async (mac) => {
-    const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(mac)
-    try {
-      installApi()
-      renderApp()
-      expect(Boolean(document.querySelector('.mac-startup-drag[data-tauri-drag-region]'))).toBe(mac)
-      await finishSplash()
-      fireEvent.click(screen.getByRole('button', { name: 'Workbench ready' }))
-      await advance(0)
-      await advance(FADE_MS)
-      expect(document.querySelector('.mac-startup-drag')).toBeNull()
-    } finally {
-      isMac.mockRestore()
+  it.each(['mac', 'windows', null] as const)(
+    'provides a startup drag region with a custom title bar: %s',
+    async (kind) => {
+      const titlebar = vi.spyOn(platform, 'customTitlebar').mockReturnValue(kind)
+      try {
+        installApi()
+        renderApp()
+        expect(
+          Boolean(document.querySelector('.titlebar-startup-drag[data-tauri-drag-region]'))
+        ).toBe(kind !== null)
+        expect(document.documentElement.dataset.titlebar).toBe(kind ?? undefined)
+        await finishSplash()
+        fireEvent.click(screen.getByRole('button', { name: 'Workbench ready' }))
+        await advance(0)
+        await advance(FADE_MS)
+        expect(document.querySelector('.titlebar-startup-drag')).toBeNull()
+        expect(screen.getByTestId('window-controls')).toBeTruthy()
+      } finally {
+        titlebar.mockRestore()
+      }
     }
-  })
+  )
 
   it('has Ray narrate the checks on the splash', async () => {
     installApi()

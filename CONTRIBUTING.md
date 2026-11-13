@@ -71,12 +71,14 @@ rayfin-fabricator/
 ├─ src-tauri/                 Rust Tauri backend, IPC commands, services, resources, packaging
 │  ├─ src/commands/           IPC handlers: advisor, auth, chat, deploy (publishing), design, doctor, fabric, files, git, local, projects, settings, team, …
 │  ├─ src/services/           exec, local_backend (the rayfin-local supervisor), preview, store, telemetry, history, crashlog, emit, paths, team, …
+│  ├─ src/titlebar/           The main window without a native title bar: macOS traffic lights, Windows Snap Layouts overlay
 │  ├─ binaries/               The rayfin-local sidecar, downloaded by scripts/rayfin-local (not committed)
 │  ├─ windows/                NSIS installer hooks that stop the sidecar before an update or uninstall
 │  ├─ vendor/wry/             Vendored wry: upstream crate + the patches in vendor/wry-patches
 │  └─ vendor/wry-patches/     WebView2 device-compliance SSO + macOS preview-positioning fix
 ├─ src/renderer/              React 19 + TypeScript UI built with Vite
 │  ├─ screens/                SetupScreen onboarding and Workbench shell
+│  ├─ titlebar/               The app's own title bar row, window drag regions and Windows caption buttons
 │  └─ components/             ChatPanel, PreviewPane, CodeViewer, DeploymentsControl, AdvisorView, GitControl, SettingsModal, …
 ├─ src/shared/ipc.ts          Shared TypeScript IPC types
 ├─ src/shared/advisor/        Advisor rule catalog (rules.json), shared by the renderer and the Rust core
@@ -194,6 +196,13 @@ npm run check:docs   # content lint
 - Link related issues where possible.
 - Include screenshots or notes for UI changes.
 - Update the docs site (`website/content/docs/`) when behavior, setup, or release steps change.
+
+## Window title bar
+
+On macOS and Windows the main window has no native title bar: the app bar (or whichever bar is on top, such as Help's) reaches the window's top edge, moves the window and keeps clear of the window controls. The shared part is in `src/renderer/src/titlebar/`: `<html data-titlebar="mac|windows">`, the first `--titlebar-h` row, the `--titlebar-inset-start`/`--titlebar-inset-end` space a top bar leaves for the controls, and `dragRegion()` for `data-tauri-drag-region`. `src-tauri/src/titlebar/` drops the native title bar from the window.
+
+- **macOS** keeps the native traffic lights over the app bar (`TitleBarStyle::Overlay`). `titlebar/mac.ts` and `titlebar/macos.rs` keep them centred on the first row and slide the app bar's inset in and out of fullscreen.
+- **Windows** has an undecorated window with a shadow, which keeps the Windows 11 rounded corners and resizing. The caption buttons are HTML (`titlebar/WindowControls.tsx`), drawn like Windows 11's. Windows offers Snap Layouts only over a window that answers `WM_NCHITTEST` with `HTMAXBUTTON`, and WebView2's own child window answers over the page, so `titlebar/snap_overlay.rs` puts a small native child window over the Maximize button. That window takes the pointer there: it maximizes and restores the window, and sends hover and press back to the page (`window:maximize-button`), where CSS `:hover` can't see them.
 
 ## Vendored wry patches
 

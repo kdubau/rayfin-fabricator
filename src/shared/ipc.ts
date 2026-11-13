@@ -3736,6 +3736,12 @@ export interface WindowTitlebarState {
   transitionId: number
 }
 
+/** The pointer over the native Snap Layouts overlay on the Windows Maximize button. */
+export interface MaximizeButtonState {
+  hover: boolean
+  pressed: boolean
+}
+
 export const IpcChannels = {
   ping: 'app:ping',
   getVersions: 'app:getVersions',
@@ -3743,6 +3749,7 @@ export const IpcChannels = {
   openLogs: 'app:openLogs',
   relaunch: 'app:relaunch',
   windowFullscreen: 'window:fullscreen',
+  windowMaximizeButton: 'window:maximize-button',
 
   updateCheck: 'app:updateCheck',
   updateDownload: 'app:updateDownload',
@@ -3911,6 +3918,13 @@ export interface RayfinStudioApi {
   revealTrafficLights: (transitionId: number, animate: boolean) => Promise<void>
   /** Fullscreen state once the system animation has finished and WebKit can draw. */
   onFullscreenChanged: (cb: (state: WindowTitlebarState) => void) => () => void
+  /**
+   * Windows: put the native Snap Layouts overlay over the page's Maximize
+   * button (`bounds` as measured for the native preview), or hide it (`null`).
+   */
+  placeSnapOverlay: (bounds: PreviewBounds | null) => Promise<void>
+  /** Windows: hover and press on that overlay, which takes the pointer from the page. */
+  onMaximizeButton: (cb: (state: MaximizeButtonState) => void) => () => void
   /**
    * Files and folders dragged onto Fabricator's window from the OS. The page
    * gets no drag events of its own for them (the window takes the drop to

@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import type { RayfinStudioApi, WindowTitlebarState } from '@shared/ipc'
-import * as platform from './platform'
-import { deferred } from '../test/deferred'
-import { useMacTitlebar } from './macTitlebar'
+import * as platform from '../platform'
+import { deferred } from '../../test/deferred'
+import { useMacTitlebar } from './mac'
 
 const root = document.documentElement
 

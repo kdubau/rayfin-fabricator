@@ -20,6 +20,7 @@ import {
   type AppProgressEvent,
   type AppSettings,
   type WindowTitlebarState,
+  type MaximizeButtonState,
   type AuthProvider,
   type AdvisorEventEnvelope,
   type AdvisorFinding,
@@ -178,6 +179,8 @@ export const api: RayfinStudioApi = {
   revealTrafficLights: (transitionId, animate) =>
     invoke('window_reveal_traffic_lights', { transitionId, animate }),
   onFullscreenChanged: (cb) => subscribe<WindowTitlebarState>(IpcChannels.windowFullscreen, cb),
+  placeSnapOverlay: (bounds) => invoke('window_place_snap_overlay', { bounds }),
+  onMaximizeButton: (cb) => subscribe<MaximizeButtonState>(IpcChannels.windowMaximizeButton, cb),
   onFileDrop: subscribeFileDrop,
 
   updates: {

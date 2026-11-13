@@ -121,18 +121,24 @@ describe('opening Help', () => {
     expect(await screen.findByText('Contoso Expenses')).toBeTruthy()
   })
 
-  it.each([true, false])('lets its bar move the window only on macOS: %s', async (mac) => {
-    const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(mac)
-    try {
-      setup({ projectName: 'Contoso Expenses' })
-      const bar = (await screen.findByText('Contoso Expenses')).closest('.help-bar')!
-      expect(bar.hasAttribute('data-tauri-drag-region')).toBe(mac)
-      expect(bar.querySelector('.help-bar-id')!.hasAttribute('data-tauri-drag-region')).toBe(mac)
-      expect(bar.querySelector('.help-bar-close')!.hasAttribute('data-tauri-drag-region')).toBe(false)
-    } finally {
-      isMac.mockRestore()
+  it.each(['mac', 'windows', null] as const)(
+    'lets its bar move the window with a custom title bar: %s',
+    async (kind) => {
+      const titlebar = vi.spyOn(platform, 'customTitlebar').mockReturnValue(kind)
+      const drag = kind !== null
+      try {
+        setup({ projectName: 'Contoso Expenses' })
+        const bar = (await screen.findByText('Contoso Expenses')).closest('.help-bar')!
+        expect(bar.hasAttribute('data-tauri-drag-region')).toBe(drag)
+        expect(bar.querySelector('.help-bar-id')!.hasAttribute('data-tauri-drag-region')).toBe(drag)
+        expect(bar.querySelector('.help-bar-close')!.hasAttribute('data-tauri-drag-region')).toBe(
+          false
+        )
+      } finally {
+        titlebar.mockRestore()
+      }
     }
-  })
+  )
 
   it('is hosted by Ray, who greets the user', async () => {
     setup()

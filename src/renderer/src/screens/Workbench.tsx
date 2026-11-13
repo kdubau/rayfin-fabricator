@@ -115,6 +115,7 @@ import { DEPLOY_QUESTION } from '../components/help/parts'
 import Spotlight from '../components/spotlight/Spotlight'
 import { workbenchSearch } from '../components/spotlight/workbenchSearch'
 import { isMac, modKey, shortcut } from '../platform'
+import { dragRegion } from '../titlebar'
 import { errorMessage, setErrorProject } from '../errorReport'
 import { accountFacts, workbenchFacts } from '../helpFacts'
 import type { HelpAction, HelpIssueDraft, InstalledApp } from '@shared/ipc'
@@ -2944,11 +2945,12 @@ export default function Workbench({
     )
   }
 
+  const drag = dragRegion()
   return (
     <div className="app-shell">
-      <header className="app-bar" data-tauri-drag-region={isMac() ? '' : undefined}>
-        <div className="app-bar-row" data-tauri-drag-region={isMac() ? '' : undefined}>
-          <div className="app-bar-start" data-tauri-drag-region={isMac() ? '' : undefined}>
+      <header className="app-bar" data-tauri-drag-region={drag}>
+        <div className="app-bar-row" data-tauri-drag-region={drag}>
+          <div className="app-bar-start" data-tauri-drag-region={drag}>
             {teamMap && !showCreate && !showClone && !showMigrate ? (
               <BackToProject
                 name={teamMap.from === 'project' && active ? active.name : 'projects'}
@@ -2994,7 +2996,7 @@ export default function Workbench({
               </button>
             )}
           </div>
-          <div className="app-bar-center" data-tauri-drag-region={isMac() ? '' : undefined}>
+          <div className="app-bar-center" data-tauri-drag-region={drag}>
             {projectToolsReady && (
               <ProjectTabs
                 view={viewMode}
@@ -3004,7 +3006,7 @@ export default function Workbench({
               />
             )}
           </div>
-          <div className="app-bar-end" data-tauri-drag-region={isMac() ? '' : undefined}>
+          <div className="app-bar-end" data-tauri-drag-region={drag}>
             {active && projectToolsReady && active.team && (
               <TeamPublishControl
                 project={active}

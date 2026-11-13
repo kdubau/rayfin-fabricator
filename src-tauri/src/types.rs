@@ -11,6 +11,13 @@ pub struct WindowTitlebarState {
   pub transition_id: u32,
 }
 
+/// The pointer over the Windows Snap Layouts overlay (`titlebar::snap_overlay`).
+#[derive(Serialize, Clone, Copy, Default, PartialEq, Eq, Debug)]
+pub struct MaximizeButtonState {
+  pub hover: bool,
+  pub pressed: bool,
+}
+
 /* ----------------------------- versions ----------------------------- */
 
 #[derive(Serialize, Clone)]

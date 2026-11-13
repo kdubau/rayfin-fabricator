@@ -36,6 +36,7 @@ pub mod settings;
 pub mod skills;
 pub mod suggest;
 pub mod team;
+pub mod titlebar;
 pub mod updates;
 pub mod util;
 pub mod local;
