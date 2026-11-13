@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { HelpAnswer, HelpEventEnvelope, HelpGrounding } from '@shared/ipc'
 import { HelpView } from './HelpView'
 import { ToastProvider } from '../../toast'
+import * as platform from '../../platform'
 
 /** Push a streamed event to the subscriber the view registered. */
 let emit: (envelope: HelpEventEnvelope) => void = () => {}
@@ -118,6 +119,19 @@ describe('opening Help', () => {
   it('names the project it will answer about', async () => {
     setup({ projectName: 'Contoso Expenses' })
     expect(await screen.findByText('Contoso Expenses')).toBeTruthy()
+  })
+
+  it.each([true, false])('lets its bar move the window only on macOS: %s', async (mac) => {
+    const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(mac)
+    try {
+      setup({ projectName: 'Contoso Expenses' })
+      const bar = (await screen.findByText('Contoso Expenses')).closest('.help-bar')!
+      expect(bar.hasAttribute('data-tauri-drag-region')).toBe(mac)
+      expect(bar.querySelector('.help-bar-id')!.hasAttribute('data-tauri-drag-region')).toBe(mac)
+      expect(bar.querySelector('.help-bar-close')!.hasAttribute('data-tauri-drag-region')).toBe(false)
+    } finally {
+      isMac.mockRestore()
+    }
   })
 
   it('is hosted by Ray, who greets the user', async () => {

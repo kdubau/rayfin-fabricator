@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type JSX } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import type { AppSettings, AuthProvider, AuthStatus, DoctorReport } from '@shared/ipc'
 import SetupScreen from './screens/SetupScreen'
 import Workbench from './screens/Workbench'
@@ -15,6 +15,7 @@ import { useToast } from './toast'
 import { authErrorMessage } from './authErrors'
 import { reportEvent } from './errorReport'
 import { isMac } from './platform'
+import { useMacTitlebar } from './macTitlebar'
 import {
   CHECKING_AUTH,
   failedAuth,
@@ -331,17 +332,14 @@ function App(): JSX.Element {
     }
   }, [refresh, verifyInBackground, returning, toast])
 
-  // Apply zoom before the workbench measures the app bar.
-  useLayoutEffect(() => {
-    if (!settings) return
-    applyUiScale(settings.uiScale)
-  }, [settings])
-
-  // Apply the theme app-wide and follow the OS when set to 'system'.
+  // Apply the theme app-wide (covers splash + setup, not just the workbench)
+  // and follow the OS when set to 'system'.
   useEffect(() => {
     if (!settings) return
+    applyUiScale(settings.uiScale)
     return watchTheme(settings.theme)
   }, [settings])
+  useMacTitlebar(settings?.uiScale)
 
   const updateSettings = useCallback(async (patch: Partial<AppSettings>): Promise<void> => {
     setSettings(await window.api.settings.set(patch))

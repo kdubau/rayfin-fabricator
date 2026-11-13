@@ -4,6 +4,7 @@ import { Codicon } from '../icons'
 import { topLayerOpen, useSuppressPreview } from '../../overlay'
 import { useToast } from '../../toast'
 import { openDocs } from '../../docsLinks'
+import { isMac } from '../../platform'
 import { reportThrown } from '../../errorReport'
 import { HelpComposer } from './HelpComposer'
 import { HelpRayAvatar, TypedLine } from './HelpRay'
@@ -75,6 +76,8 @@ export function HelpView({
   continuing
 }: HelpViewProps): JSX.Element {
   const toast = useToast()
+  /** On macOS Help's bar stands in for the app bar, including as the window's handle. */
+  const drag = isMac() ? '' : undefined
   useSuppressPreview()
   const [conversation, { exchanges, busy, historyReady, resumedAt, grounding, preparing }] =
     useHelpConversation()
@@ -173,13 +176,13 @@ export function HelpView({
 
   return (
     <div className="help" role="dialog" aria-modal="true" aria-label="Help">
-      <header className="help-bar">
-        <span className="help-bar-id">
+      <header className="help-bar" data-tauri-drag-region={drag}>
+        <span className="help-bar-id" data-tauri-drag-region={drag}>
           <Codicon name="terminal" />
           fabricator&nbsp;help
         </span>
         <GroundingBadge grounding={grounding} preparing={preparing} onRefresh={refreshGrounding} />
-        <span className="help-bar-spacer" />
+        <span className="help-bar-spacer" data-tauri-drag-region={drag} />
         {projectName && (
           <span className="help-bar-ctx" title={`Questions are answered about ${projectName}`}>
             <Codicon name="folder" />

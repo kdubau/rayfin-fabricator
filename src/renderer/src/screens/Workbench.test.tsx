@@ -28,8 +28,7 @@ import type {
   ProjectsState,
   RayfinStudioApi,
   SavedTurn,
-  StudioProject,
-  WindowTitlebarState
+  StudioProject
 } from '@shared/ipc'
 import { ToastProvider } from '../toast'
 import { OverlayProvider } from '../overlay'
@@ -310,9 +309,6 @@ function installApi(active = false) {
     projects: active ? [project] : []
   }
   const api = {
-    centerTrafficLights: vi.fn().mockResolvedValue({ fullscreen: false, transitionId: 0 }),
-    revealTrafficLights: vi.fn().mockResolvedValue(undefined),
-    onFullscreenChanged: vi.fn<RayfinStudioApi['onFullscreenChanged']>().mockReturnValue(() => {}),
     auth: {
       loginRayfin: vi.fn().mockResolvedValue({ ok: true, exitCode: 0 }),
       refreshRayfin: vi.fn().mockResolvedValue({ ok: true, exitCode: 0 }),
@@ -802,188 +798,6 @@ describe('Workbench authentication recovery', () => {
 })
 
 describe('Workbench app bar', () => {
-  const getAnimations = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'getAnimations')
-  beforeEach(() => {
-    Object.defineProperty(HTMLElement.prototype, 'getAnimations', {
-      configurable: true,
-      value: vi.fn(() => [])
-    })
-    vi.stubGlobal('matchMedia', vi.fn((media: string) => ({
-      media,
-      matches: false,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn()
-    })))
-  })
-  afterEach(() => {
-    if (getAnimations) Object.defineProperty(HTMLElement.prototype, 'getAnimations', getAnimations)
-    else Reflect.deleteProperty(HTMLElement.prototype, 'getAnimations')
-    vi.unstubAllGlobals()
-  })
-
-  it.each([false, true])(
-    'tracks native fullscreen transitions from initial state %s',
-    async (initialFullscreen) => {
-      const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(true)
-      const bounds = vi
-        .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-        .mockReturnValue(DOMRect.fromRect({ y: 6, height: 30 }))
-      try {
-        const api = installApi(true)
-        api.centerTrafficLights.mockResolvedValue({ fullscreen: initialFullscreen, transitionId: 0 })
-        let emitFullscreen!: (state: WindowTitlebarState) => void
-        const unsubscribe = vi.fn()
-        api.onFullscreenChanged.mockImplementation((cb) => {
-          emitFullscreen = cb
-          return unsubscribe
-        })
-        const view = render(<Workbench {...makeProps()} />, { wrapper: Wrapper })
-        const shell = view.container.querySelector('.app-shell')!
-        await act(async () => {})
-        expect(shell.classList.contains('app-shell--fullscreen')).toBe(initialFullscreen)
-        expect(shell.classList.contains('app-shell--slide')).toBe(false)
-        act(() => emitFullscreen({ fullscreen: !initialFullscreen, transitionId: 1 }))
-        expect(shell.classList.contains('app-shell--slide')).toBe(true)
-        expect(shell.classList.contains('app-shell--fullscreen')).toBe(!initialFullscreen)
-        act(() => emitFullscreen({ fullscreen: initialFullscreen, transitionId: 2 }))
-        expect(shell.classList.contains('app-shell--fullscreen')).toBe(initialFullscreen)
-        expect(api.centerTrafficLights).toHaveBeenCalledTimes(1)
-        view.unmount()
-        expect(unsubscribe).toHaveBeenCalledTimes(1)
-      } finally {
-        bounds.mockRestore()
-        isMac.mockRestore()
-      }
-    }
-  )
-
-  it('does not overwrite a fullscreen transition with a late initial response', async () => {
-    const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(true)
-    const bounds = vi
-      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-      .mockReturnValue(DOMRect.fromRect({ y: 6, height: 30 }))
-    try {
-      const api = installApi(true)
-      const initial = deferred<WindowTitlebarState>()
-      api.centerTrafficLights.mockReturnValue(initial.promise)
-      let emitFullscreen!: (state: WindowTitlebarState) => void
-      api.onFullscreenChanged.mockImplementation((cb) => {
-        emitFullscreen = cb
-        return () => {}
-      })
-      const { container } = render(<Workbench {...makeProps()} />, { wrapper: Wrapper })
-      act(() => emitFullscreen({ fullscreen: true, transitionId: 1 }))
-      await act(async () => initial.resolve({ fullscreen: false, transitionId: 0 }))
-      expect(container.querySelector('.app-shell--fullscreen')).not.toBeNull()
-    } finally {
-      bounds.mockRestore()
-      isMac.mockRestore()
-    }
-  })
-
-  it('reveals traffic lights only after the exit slide completes, not after a stale slide', async () => {
-    const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(true)
-    const bounds = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-      .mockReturnValue(DOMRect.fromRect({ y: 6, height: 30 }))
-    try {
-      const api = installApi(true)
-      api.centerTrafficLights.mockResolvedValue({ fullscreen: true, transitionId: 1 })
-      let emitFullscreen!: (state: WindowTitlebarState) => void
-      api.onFullscreenChanged.mockImplementation((cb) => {
-        emitFullscreen = cb
-        return () => {}
-      })
-      render(<Workbench {...makeProps()} />, { wrapper: Wrapper })
-      await act(async () => {})
-      const first = deferred<Animation>()
-      const oldAnimation = { finished: first.promise } as Animation
-      vi.mocked(HTMLElement.prototype.getAnimations).mockReturnValue([oldAnimation])
-      act(() => emitFullscreen({ fullscreen: false, transitionId: 2 }))
-      expect(api.revealTrafficLights).not.toHaveBeenCalled()
-      act(() => emitFullscreen({ fullscreen: true, transitionId: 3 }))
-      await act(async () => first.resolve(oldAnimation))
-      expect(api.revealTrafficLights).not.toHaveBeenCalled()
-      const second = deferred<Animation>()
-      const animation = { finished: second.promise } as Animation
-      vi.mocked(HTMLElement.prototype.getAnimations).mockReturnValue([animation])
-      act(() => emitFullscreen({ fullscreen: false, transitionId: 4 }))
-      expect(api.revealTrafficLights).not.toHaveBeenCalled()
-      await act(async () => second.resolve(animation))
-      expect(api.revealTrafficLights).toHaveBeenCalledExactlyOnceWith(4, true)
-    } finally {
-      bounds.mockRestore()
-      isMac.mockRestore()
-    }
-  })
-
-  it('reveals immediately without a fade when reduced motion disables the slide', async () => {
-    const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(true)
-    const bounds = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-      .mockReturnValue(DOMRect.fromRect({ y: 6, height: 30 }))
-    vi.mocked(window.matchMedia).mockImplementation((media) => ({
-      media,
-      matches: true,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn()
-    }))
-    try {
-      const api = installApi(true)
-      api.centerTrafficLights.mockResolvedValue({ fullscreen: true, transitionId: 1 })
-      let emitFullscreen!: (state: WindowTitlebarState) => void
-      api.onFullscreenChanged.mockImplementation((cb) => {
-        emitFullscreen = cb
-        return () => {}
-      })
-      render(<Workbench {...makeProps()} />, { wrapper: Wrapper })
-      await act(async () => {})
-      act(() => emitFullscreen({ fullscreen: false, transitionId: 2 }))
-      await act(async () => {})
-      expect(api.revealTrafficLights).toHaveBeenCalledExactlyOnceWith(2, false)
-    } finally {
-      bounds.mockRestore()
-      isMac.mockRestore()
-    }
-  })
-
-  it('updates macOS control geometry for zoom, not for individual resize frames', () => {
-    const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(true)
-    let top = 6
-    let height = 30
-    const bounds = vi
-      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-      .mockImplementation(function (this: HTMLElement) {
-        return this.classList.contains('app-bar-end')
-          ? DOMRect.fromRect({ y: top, height })
-          : DOMRect.fromRect()
-      })
-    try {
-      const api = installApi(true)
-      const props = makeProps()
-      const view = render(<Workbench {...props} />, { wrapper: Wrapper })
-      expect(api.centerTrafficLights).toHaveBeenLastCalledWith(21)
-      api.centerTrafficLights.mockClear()
-      fireEvent.resize(window)
-      expect(api.centerTrafficLights).not.toHaveBeenCalled()
-      top = 9
-      height = 45
-      view.rerender(
-        <Workbench {...props} settings={{ theme: 'dark', ...props.settings, uiScale: 1.5 }} />
-      )
-      expect(api.centerTrafficLights).toHaveBeenLastCalledWith(31.5)
-    } finally {
-      bounds.mockRestore()
-      isMac.mockRestore()
-    }
-  })
-
   it.each([true, false])('uses macOS drag regions only on macOS: %s', async (mac) => {
     const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(mac)
     try {
@@ -991,9 +805,7 @@ describe('Workbench app bar', () => {
       const { container } = render(<Workbench {...makeProps()} />, { wrapper: Wrapper })
       await screen.findByLabelText('Chat draft')
 
-      const shell = container.querySelector('.app-shell') as HTMLElement
       const bar = container.querySelector('header.app-bar') as HTMLElement
-      expect(shell.classList.contains('app-shell--mac')).toBe(mac)
       expect(bar.hasAttribute('data-tauri-drag-region')).toBe(mac)
       expect(bar.querySelector('.app-bar-row')?.hasAttribute('data-tauri-drag-region')).toBe(mac)
       const search = within(bar).getByRole('button', { name: 'Search' })

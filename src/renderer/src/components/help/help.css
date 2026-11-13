@@ -40,6 +40,13 @@
   font-size: 12px;
 }
 
+/* Help covers the app bar, so on macOS its bar takes that place under the
+   window controls. */
+:root[data-mac-titlebar] .help-bar {
+  height: var(--titlebar-h);
+  padding-left: max(14px, var(--mac-inset, 0px));
+}
+
 .help-bar-id {
   display: inline-flex;
   align-items: center;

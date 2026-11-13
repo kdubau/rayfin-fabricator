@@ -211,30 +211,32 @@ code {
   /* Icons beside a label, and menu carets. */
   --bar-ico: 14px;
   --bar-caret: 12px;
-  padding: 6px 12px;
+  padding: calc((var(--titlebar-h) - var(--bar-h)) / 2) 12px;
   background: var(--bg-elev);
   border-bottom: 1px solid var(--border);
 }
 
-/* Reserve space for the native window controls until fullscreen hides them. */
-.app-shell--mac {
-  --mac-inset: max(0px, calc(88px / var(--ui-scale, 1) - 12px));
+/* The first bar row on every screen. On macOS the native window controls centre
+   on it (macTitlebar.ts), and whichever bar is on top keeps --mac-inset clear
+   for them until fullscreen hides them. */
+:root {
+  --titlebar-h: 42px;
 }
 
-.app-shell--mac .app-bar-start {
-  padding-left: var(--mac-inset);
+:root[data-mac-titlebar='window'] {
+  --mac-inset: calc(88px / var(--ui-scale, 1));
 }
 
-.app-shell--mac.app-shell--fullscreen .app-bar-start {
-  padding-left: 0;
+:root[data-mac-titlebar] .app-bar-start {
+  padding-left: max(0px, var(--mac-inset, 0px) - 12px);
 }
 
-.app-shell--slide .app-bar-start {
+:root[data-mac-titlebar-slide] :is(.app-bar-start, .help-bar) {
   transition: padding-left 650ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-shell--slide .app-bar-start {
+  :root[data-mac-titlebar-slide] :is(.app-bar-start, .help-bar) {
     transition: none;
   }
 }
