@@ -4,6 +4,13 @@
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowTitlebarState {
+  pub fullscreen: bool,
+  pub transition_id: u32,
+}
+
 /* ----------------------------- versions ----------------------------- */
 
 #[derive(Serialize, Clone)]

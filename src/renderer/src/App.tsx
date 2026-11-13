@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type JSX } from 'react'
 import type { AppSettings, AuthProvider, AuthStatus, DoctorReport } from '@shared/ipc'
 import SetupScreen from './screens/SetupScreen'
 import Workbench from './screens/Workbench'
@@ -14,6 +14,7 @@ import { useUpdates } from './update'
 import { useToast } from './toast'
 import { authErrorMessage } from './authErrors'
 import { reportEvent } from './errorReport'
+import { isMac } from './platform'
 import {
   CHECKING_AUTH,
   failedAuth,
@@ -26,6 +27,16 @@ import {
 } from './startup'
 
 type Phase = 'loading' | 'setup' | 'ready'
+
+function MacStartupDragRegion({ blocking = false }: { blocking?: boolean }): JSX.Element | null {
+  return isMac() ? (
+    <div
+      className={`mac-startup-drag${blocking ? ' mac-startup-drag--blocking' : ''}`}
+      data-tauri-drag-region
+      aria-hidden="true"
+    />
+  ) : null
+}
 
 // Keep the playful splash on screen long enough to actually be seen on a first
 // launch, even when the startup checks resolve almost instantly.
@@ -320,11 +331,15 @@ function App(): JSX.Element {
     }
   }, [refresh, verifyInBackground, returning, toast])
 
-  // Apply the theme app-wide (covers splash + setup, not just the workbench)
-  // and follow the OS when set to 'system'.
-  useEffect(() => {
+  // Apply zoom before the workbench measures the app bar.
+  useLayoutEffect(() => {
     if (!settings) return
     applyUiScale(settings.uiScale)
+  }, [settings])
+
+  // Apply the theme app-wide and follow the OS when set to 'system'.
+  useEffect(() => {
+    if (!settings) return
     return watchTheme(settings.theme)
   }, [settings])
 
@@ -374,7 +389,12 @@ function App(): JSX.Element {
   // A mandatory startup update blocks the entire app behind a forced-update screen
   // until it installs and restarts. Offline / up-to-date launches never set this.
   if (blocking) {
-    return <ForcedUpdateScreen />
+    return (
+      <>
+        <MacStartupDragRegion blocking />
+        <ForcedUpdateScreen />
+      </>
+    )
   }
 
   const screen =
@@ -404,6 +424,7 @@ function App(): JSX.Element {
   return (
     <MascotProvider>
       <HelpConversationProvider>
+        {(phase !== 'ready' || curtain !== 'gone') && <MacStartupDragRegion />}
         <UpdateBanner />
         <UpdateModal />
         {screen}

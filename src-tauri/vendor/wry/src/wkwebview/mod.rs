@@ -1040,23 +1040,22 @@ impl InnerWebView {
         let parent_view = self.webview.superview().unwrap();
         let mut origin = window_position(&parent_view, x, y, height);
         // [rayfin-desktop local patch: macos-titlebar-inset]
-        // The window uses a full-size content view, so the parent content view
-        // extends up under the native title bar. The main webview lays its web
-        // content out *below* the title bar (via safe-area insets), so the
-        // renderer's CSS y-origin sits `title_bar_inset` points below the content
-        // view's top. A child webview positioned purely by frame doesn't get that
-        // inset, so without this correction it lands `title_bar_inset` points too
-        // high — covering the toolbar. Shift it down to align with the web content.
-        // In fullscreen there is no title bar, the inset is 0, and this is a no-op.
-        // The main webview is a child too (Tauri's multiwebview mode), which Tauri
-        // resizes to fill the window on every resize. It keeps its full frame and
-        // safe-area insets: shifted, its page's bottom would hang below the window.
+        // A visible native titlebar puts the main page below its content-layout
+        // inset, while child webviews are positioned against the full content view.
+        // An overlay titlebar instead lets the page start at the content view's
+        // top, so shifting its children would put them too low.
+        // The main webview is itself a child in Tauri's multiwebview mode and must
+        // keep its full frame when resized, regardless of titlebar style.
         let parent_size = parent_view.frame().size;
         let fills_window = x == 0
           && y == 0
           && width >= parent_size.width - 1.0
           && height >= parent_size.height - 1.0;
-        if let Some(win) = self.webview.window().filter(|_| !fills_window) {
+        if let Some(win) = self
+          .webview
+          .window()
+          .filter(|win| !fills_window && !win.titlebarAppearsTransparent())
+        {
           let cl = win.contentLayoutRect();
           let title_bar_inset =
             parent_view.frame().size.height - (cl.origin.y + cl.size.height);

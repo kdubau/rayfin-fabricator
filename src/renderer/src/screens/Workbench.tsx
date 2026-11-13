@@ -26,7 +26,8 @@ import {
   type ProjectsState,
   type RayfinVersionInfo,
   type StudioProject,
-  type UnsupportedWorkspace
+  type UnsupportedWorkspace,
+  type WindowTitlebarState
 } from '@shared/ipc'
 import CreateProjectScreen from '../components/CreateProjectScreen'
 import CloneFromGitHubScreen from '../components/CloneFromGitHubScreen'
@@ -303,6 +304,66 @@ export default function Workbench({
   onOpening
 }: Props): JSX.Element {
   const toast = useToast()
+  const appBarEndRef = useRef<HTMLDivElement>(null)
+  const appBarStartRef = useRef<HTMLDivElement>(null)
+  const [titlebar, setTitlebar] = useState<WindowTitlebarState | null>(null)
+  const fullscreen = titlebar?.fullscreen ?? false
+  // Only live transitions slide; the initial state just applies.
+  const [slide, setSlide] = useState(false)
+  useEffect(() => {
+    if (!isMac() || !appBarEndRef.current) return
+    let cancelled = false
+    let changed = false
+    const unsubscribe = window.api.onFullscreenChanged((value) => {
+      changed = true
+      setTitlebar(value)
+      setSlide(true)
+    })
+    const bounds = appBarEndRef.current.getBoundingClientRect()
+    const centerY = bounds.top + bounds.height / 2
+    if (centerY > 0) {
+      void window.api
+        .centerTrafficLights(centerY)
+        .then((value) => {
+          if (!cancelled && !changed) setTitlebar(value)
+        })
+        .catch((error: unknown) => {
+          console.error('Could not align macOS window controls:', error)
+        })
+    }
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [settings?.uiScale])
+  useEffect(() => {
+    const start = appBarStartRef.current
+    if (!isMac() || !titlebar || titlebar.fullscreen || !start) return
+    let cancelled = false
+    const revealWhenReady = async (): Promise<void> => {
+      while (!cancelled) {
+        try {
+          await Promise.all(start.getAnimations().map((animation) => animation.finished))
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') continue
+          throw error
+        }
+        if (!cancelled) {
+          await window.api.revealTrafficLights(
+            titlebar.transitionId,
+            !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          )
+        }
+        return
+      }
+    }
+    void revealWhenReady().catch((error: unknown) => {
+      console.error('Could not reveal macOS window controls:', error)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [titlebar, settings?.uiScale])
   const [versions, setVersions] = useState<AppVersions | null>(null)
   const [signingOut, setSigningOut] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
@@ -2945,10 +3006,16 @@ export default function Workbench({
   }
 
   return (
-    <div className="app-shell">
-      <header className="app-bar">
-        <div className="app-bar-row">
-          <div className="app-bar-start">
+    <div
+      className={`app-shell${isMac() ? ' app-shell--mac' : ''}${fullscreen ? ' app-shell--fullscreen' : ''}${slide ? ' app-shell--slide' : ''}`}
+    >
+      <header className="app-bar" data-tauri-drag-region={isMac() ? '' : undefined}>
+        <div className="app-bar-row" data-tauri-drag-region={isMac() ? '' : undefined}>
+          <div
+            ref={appBarStartRef}
+            className="app-bar-start"
+            data-tauri-drag-region={isMac() ? '' : undefined}
+          >
             {teamMap && !showCreate && !showClone && !showMigrate ? (
               <BackToProject
                 name={teamMap.from === 'project' && active ? active.name : 'projects'}
@@ -2994,7 +3061,7 @@ export default function Workbench({
               </button>
             )}
           </div>
-          <div className="app-bar-center">
+          <div className="app-bar-center" data-tauri-drag-region={isMac() ? '' : undefined}>
             {projectToolsReady && (
               <ProjectTabs
                 view={viewMode}
@@ -3004,7 +3071,11 @@ export default function Workbench({
               />
             )}
           </div>
-          <div className="app-bar-end">
+          <div
+            ref={appBarEndRef}
+            className="app-bar-end"
+            data-tauri-drag-region={isMac() ? '' : undefined}
+          >
             {active && projectToolsReady && active.team && (
               <TeamPublishControl
                 project={active}

@@ -34,15 +34,29 @@ Edge on the same device. See [Background](#background-why-0001-is-needed).
 
 **Where:** `InnerWebView::set_bounds`, for macOS child webviews.
 
-**Change:** shifts the child webview down by the title-bar inset: the content view's height
-minus the bottom of the window's `contentLayoutRect`. A child webview that fills the whole
-window is left where it is.
+**Change:** for a visible native titlebar, shifts the child webview down by the title-bar
+inset: the content view's height minus the bottom of the window's `contentLayoutRect`.
+A child webview that fills the whole window is left where it is. A transparent overlay
+titlebar is also left unshifted, because the page begins at the top of the content view.
 
 **Why:** the main window uses a full-size content view, so the main webview lays its web
 content out *below* the native title bar (via safe-area insets), while wry positions child
 webviews purely by frame against the whole content view. Without the correction the preview
 child lands a title bar's height too high and covers the preview toolbar. In fullscreen
-there is no title bar, the inset is 0, and the patch changes nothing.
+there is no title bar, the inset is 0, and the patch changes nothing. The main window now
+uses an overlay titlebar on macOS, where applying this inset would move the preview and
+Quick Look child webviews too low.
+
+Traffic-light layout is app-owned in `src-tauri/src/titlebar.rs`: the renderer supplies
+the first app-bar row's center when zoom changes, and synchronous AppKit notifications
+keep the controls in place during resize and project-title changes without a renderer
+round trip. A native title observer reapplies alignment after AppKit finishes updating
+the window title, which can reset the buttons without resizing their container.
+WebKit suspends drawing during the native fullscreen animation, so the app-bar
+inset slides only after the system transition finishes. On exit, the native
+controls remain transparent until the renderer confirms that its slide has
+finished, then fade into the cleared space. A transition ID prevents a stale
+renderer acknowledgement from revealing them during a newer transition.
 
 Tauri's multiwebview mode (the `unstable` feature) makes the main webview a child too, and
 resizes it to fill the window on every window resize. Shifting it as well would push the

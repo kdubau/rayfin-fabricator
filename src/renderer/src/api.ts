@@ -19,6 +19,7 @@ import {
   type AppIconImage,
   type AppProgressEvent,
   type AppSettings,
+  type WindowTitlebarState,
   type AuthProvider,
   type AdvisorEventEnvelope,
   type AdvisorFinding,
@@ -173,6 +174,10 @@ export const api: RayfinStudioApi = {
   openInEditor: (id: string) => invoke('open_in_editor', { id }),
   relaunch: () => invoke('relaunch'),
   revealWindow: (background?: string) => invoke('window_reveal', { background: background ?? null }),
+  centerTrafficLights: (centerY: number) => invoke('window_center_traffic_lights', { centerY }),
+  revealTrafficLights: (transitionId, animate) =>
+    invoke('window_reveal_traffic_lights', { transitionId, animate }),
+  onFullscreenChanged: (cb) => subscribe<WindowTitlebarState>(IpcChannels.windowFullscreen, cb),
   onFileDrop: subscribeFileDrop,
 
   updates: {

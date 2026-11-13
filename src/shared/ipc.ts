@@ -3731,12 +3731,18 @@ export interface HelpEventEnvelope {
  * IPC channels
  * ------------------------------------------------------------------ */
 
+export interface WindowTitlebarState {
+  fullscreen: boolean
+  transitionId: number
+}
+
 export const IpcChannels = {
   ping: 'app:ping',
   getVersions: 'app:getVersions',
   openExternal: 'app:openExternal',
   openLogs: 'app:openLogs',
   relaunch: 'app:relaunch',
+  windowFullscreen: 'window:fullscreen',
 
   updateCheck: 'app:updateCheck',
   updateDownload: 'app:updateDownload',
@@ -3899,6 +3905,12 @@ export interface RayfinStudioApi {
    * `background` (`#rrggbb`) is that screen's colour. Later calls do nothing.
    */
   revealWindow: (background?: string) => Promise<void>
+  /** Align macOS window controls and return whether the window is entering or in fullscreen. */
+  centerTrafficLights: (centerY: number) => Promise<WindowTitlebarState>
+  /** Reveal native controls only after the matching renderer slide has finished. */
+  revealTrafficLights: (transitionId: number, animate: boolean) => Promise<void>
+  /** Fullscreen state once the system animation has finished and WebKit can draw. */
+  onFullscreenChanged: (cb: (state: WindowTitlebarState) => void) => () => void
   /**
    * Files and folders dragged onto Fabricator's window from the OS. The page
    * gets no drag events of its own for them (the window takes the drop to

@@ -37,7 +37,7 @@
   border-bottom: 1px solid var(--border);
 }
 
-.bp-seg {
+.bp-head .bp-seg {
   flex: none;
   margin-bottom: 0;
 }

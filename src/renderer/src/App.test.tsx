@@ -1,11 +1,15 @@
-import { StrictMode, useState } from 'react'
+import { StrictMode, useEffect, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { AuthProvider, AuthStatus, DoctorReport } from '@shared/ipc'
+import type { AppSettings, AuthProvider, AuthStatus, DoctorReport } from '@shared/ipc'
 import type { SetupAttention } from './startup'
 import { ToastProvider } from './toast'
+import * as platform from './platform'
+import { applyUiScale } from './theme'
 import { deferred } from '../test/deferred'
 import App, { resetStartupRecordForTests } from './App'
+
+const measureWorkbenchScale = vi.hoisted(() => vi.fn())
 
 vi.mock('./update', () => ({ useUpdates: () => ({ blocking: null }) }))
 vi.mock('./theme', () => ({
@@ -72,6 +76,7 @@ vi.mock('./screens/Workbench', () => ({
   default: ({
     auth,
     attention,
+    settings,
     onAuthChanged,
     onReviewSetup,
     onSettled,
@@ -79,6 +84,7 @@ vi.mock('./screens/Workbench', () => ({
   }: {
     auth: AuthStatus
     attention?: SetupAttention | null
+    settings: AppSettings | null
     onAuthChanged: () => Promise<void>
     onReviewSetup: () => void
     onSettled?: () => void
@@ -86,6 +92,9 @@ vi.mock('./screens/Workbench', () => ({
   }) => {
     const [draft, setDraft] = useState('')
     const [error, setError] = useState('')
+    useEffect(() => {
+      measureWorkbenchScale(document.documentElement.style.zoom)
+    }, [settings?.uiScale])
     const state = (s: { signedIn: boolean; checking?: boolean }): string =>
       s.checking ? 'checking' : String(s.signedIn)
     return (
@@ -210,6 +219,42 @@ afterEach(() => {
 })
 
 describe('App startup', () => {
+  it('applies saved zoom before the workbench measures the app bar', async () => {
+    localStorage.setItem(SETUP_DONE, '1')
+    document.documentElement.style.zoom = '1'
+    vi.mocked(applyUiScale).mockImplementation((scale) => {
+      document.documentElement.style.zoom = String(scale)
+    })
+    const api = installApi()
+    const settings = deferred<AppSettings>()
+    api.settings.get.mockReturnValue(settings.promise)
+    try {
+      renderApp()
+      await act(async () => settings.resolve({ theme: 'dark', uiScale: 1.5 }))
+      expect(measureWorkbenchScale).toHaveBeenLastCalledWith('1.5')
+    } finally {
+      vi.mocked(applyUiScale).mockReset()
+      document.documentElement.style.zoom = ''
+      measureWorkbenchScale.mockClear()
+    }
+  })
+
+  it.each([true, false])('provides a startup drag region only on macOS: %s', async (mac) => {
+    const isMac = vi.spyOn(platform, 'isMac').mockReturnValue(mac)
+    try {
+      installApi()
+      renderApp()
+      expect(Boolean(document.querySelector('.mac-startup-drag[data-tauri-drag-region]'))).toBe(mac)
+      await finishSplash()
+      fireEvent.click(screen.getByRole('button', { name: 'Workbench ready' }))
+      await advance(0)
+      await advance(FADE_MS)
+      expect(document.querySelector('.mac-startup-drag')).toBeNull()
+    } finally {
+      isMac.mockRestore()
+    }
+  })
+
   it('has Ray narrate the checks on the splash', async () => {
     installApi()
     renderApp()

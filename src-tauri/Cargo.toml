@@ -119,11 +119,15 @@ objc2 = "0.6"
 block2 = "0.6"
 objc2-foundation = { version = "0.3", default-features = false, features = [
   "std",
+  "block2",
   "NSArray",
   "NSData",
   "NSDictionary",
   "NSDate",
   "NSEnumerator",
+  "NSKeyValueObserving",
+  "NSNotification",
+  "NSOperation",
   "NSRunLoop",
   "NSError",
   "NSString",
@@ -134,6 +138,9 @@ objc2-foundation = { version = "0.3", default-features = false, features = [
 objc2-app-kit = { version = "0.3", default-features = false, features = [
   "std",
   "NSApplication",
+  "NSAnimation",
+  "NSAnimationContext",
+  "NSButton",
   "NSImage",
   "NSImageRep",
   "NSBitmapImageRep",
@@ -141,6 +148,7 @@ objc2-app-kit = { version = "0.3", default-features = false, features = [
   "NSPanel",
   "NSResponder",
   "NSSavePanel",
+  "NSView",
   "NSWindow",
 ] }
 objc2-web-kit = { version = "0.3", default-features = false, features = [
